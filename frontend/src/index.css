@@ -6,9 +6,15 @@ header {
 header a {
   color: white;
 }
-
+.site-container {
+  min-height: 100vh;
+}
 main {
-  padding: 1rem;
+  flex: 1;
+}
+.my-custom-button.btn-primary {
+  background-color: #f0c040;
+  color: black;
 }
 .products {
   display: flex;
@@ -16,9 +22,16 @@ main {
   justify-content: center;
 }
 
+.rating span {
+  color: gold;
+}
 .product {
   border: 1px #404040 solid;
   margin: 1rem;
+}
+
+.img-large {
+  max-width: 100%;
 }
 
 .product img {
