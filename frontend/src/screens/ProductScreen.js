@@ -1,5 +1,8 @@
 import { useParams } from "react-router-dom";
-import { useReducer, useEffect } from "react";
+import { useReducer, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import LoadingBox from "../Components/LoadingBox";
+import MessageBox from "../Components/MessageBox";
 import axios from "axios";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -10,6 +13,8 @@ import ListGroupItem from "react-bootstrap/esm/ListGroupItem";
 import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
 import { Helmet } from "react-helmet-async";
+import { getError } from "../utils";
+import { Store } from "../Store";
 const reducer = (state, action) => {
   switch (action.type) {
     case "FETCH_REQUEST":
@@ -23,6 +28,7 @@ const reducer = (state, action) => {
   }
 };
 export default function ProductScreen() {
+  const navigate = useNavigate();
   const params = useParams();
   const { slug } = params;
   const [{ loading, error, product }, dispatch] = useReducer(reducer, {
@@ -37,16 +43,37 @@ export default function ProductScreen() {
         const results = await axios.get(`/api/products/slug/${slug}`);
         dispatch({ type: "FETCH_SUCCESS", payload: results.data });
       } catch (err) {
-        dispatch({ type: "FETCH_FAIL", payload: err.message });
+        dispatch({ type: "FETCH_FAIL", payload: getError(err) });
       }
     };
 
     fetchData();
   }, [slug]);
+
+  const { state, dispatch: ctxDispatch } = useContext(Store);
+  const { cart } = state;
+  const addToCartHandler = async () => {
+    const existItem = cart.cartItems.find((x) => x._id === product._id);
+    const quantity = existItem ? existItem.quantity + 1 : 1;
+    const { data } = await axios.get(`/api/products/${product._id}`);
+
+    if (data.countInStock < quantity) {
+      window.alert("Sorry. Product is out of stock");
+      return;
+    }
+
+    ctxDispatch({
+      type: "CART_ADD_ITEM",
+      payload: { ...product, quantity },
+    });
+
+    navigate("/cart");
+  };
+
   return loading ? (
-    <div>Loading...</div>
+    <LoadingBox></LoadingBox>
   ) : error ? (
-    <div>{error}</div>
+    <MessageBox variant="danger">{error}</MessageBox>
   ) : (
     <div>
       <Row>
@@ -101,7 +128,10 @@ export default function ProductScreen() {
                 {product.countInStock > 0 && (
                   <ListGroupItem>
                     <div className="d-grid">
-                      <Button className="btn btn-primary my-custom-button">
+                      <Button
+                        onClick={addToCartHandler}
+                        className="btn btn-primary my-custom-button"
+                      >
                         Add to cart
                       </Button>
                     </div>
